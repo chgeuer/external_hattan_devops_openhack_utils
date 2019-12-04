@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+agent_version="2.160.1"
+agent_archive="vsts-agent-linux-x64-${agent_version}.tar.gz"
+agent_url="https://vstsagentpackage.azureedge.net/agent/${agent_version}/${agent_archive}"
 
 function usage {
   echo "$0 <options>"
@@ -8,10 +11,13 @@ function usage {
   echo "    -u | --url <url> Url of the Azure DevOps Org (required) "
   echo "    -x | --prefix <name> agent prefix (optional - default: agent)"
   echo "    -t | --token <token> Azure DevOps PAT Token (required)"
-  echo "    -p | --pool <agent_poo> Azure DevOps Agent Pool (required)"
+  echo "    -p | --pool <agent_pool_name> Azure DevOps Agent Pool (required)"
 }
 
-agent_url="https://vstsagentpackage.azureedge.net/agent/2.160.1/vsts-agent-linux-x64-2.160.1.tar.gz"
+if [ $# -le 1 ]; then
+  usage
+  exit 1
+fi
 
 declare count number
 declare url string
@@ -37,7 +43,7 @@ while [ "$1" != "" ]; do
                                 pool=$1
                                 ;;
         -h | --help )           usage
-                                exit
+                                exit 0
                                 ;;
         * )                     usage
                                 exit 1
@@ -56,8 +62,7 @@ function create_agent {
   echo "creating $agent_name"
   mkdir -p "agents/$agent_name"
   pushd "agents/$agent_name"
-    cp ../vsts-agent-linux-x64-2.160.1.tar.gz .
-    tar zxvf vsts-agent-linux-x64-2.160.1.tar.gz
+    tar zxvf "../${agent_archive}"
     sudo ./bin/installdependencies.sh
     ./config.sh --unattended --url $url --auth pat --token $token --pool $pool --agent $agent_name
     sudo ./svc.sh install
@@ -66,7 +71,6 @@ function create_agent {
 }
 
 mkdir agents
-
 pushd agents
   wget $agent_url
 popd
